@@ -1,34 +1,293 @@
-<div id="view-game" class="game-layout" style="display: none;">
-    
-    <header class="game-top-bar">
-        <div class="stats-container">
-            <div class="stat-pill pill-score">Score: <span id="stat-score">100</span></div>
-            <div class="stat-pill pill-gold">Gold: <span id="stat-gold">100</span></div>
-            <div class="stat-pill pill-crypto">Crypto: <span id="stat-crypto">0</span></div>
-        </div>
-        
-        <h3 class="blook-font" id="game-pin-header" style="margin: 0; font-size: 1.5rem; color: rgba(255,255,255,0.6);">PIN: ------</h3>
-        
-        <div class="blook-timer" id="live-timer-bubble">9</div>
-    </header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blook Arena Ultra Remake</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-classic">
 
-    <div id="box-lobby-players" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-content: center; height: 60vh;">
+    <div id="view-auth" class="app-container" style="display: flex;">
+        <h1 style="font-size: 3.5rem; margin-bottom: 10px;">BLOOK REMAKE</h1>
+        <div class="card-panel">
+            <h2 style="margin-top: 0;">Portal Credentials</h2>
+            <input type="text" id="input-user" class="input-blook" placeholder="Enter Username"><br>
+            <input type="password" id="input-pass" class="input-blook" placeholder="Enter Password"><br>
+            <button class="btn-blook btn-blue" onclick="execAuth('login')">Login</button>
+            <button class="btn-blook btn-purple" onclick="execAuth('signup')">Sign Up</button>
         </div>
-    
-    <div style="text-align: center;">
-        <button id="btn-master-start" class="btn-blook btn-green" style="display: none;" onclick="triggerHostGameBegin()">START BATTLEGROUND</button>
     </div>
 
-    <main id="board-live-interactive" style="display: none; width: 100%;">
-        <div class="question-container">
-            <h2 id="label-active-question" class="massive-question-text">Which planet is closest to the Sun?</h2>
-        </div>
+    <div id="view-hub" class="app-container" style="display: none;">
+        <h1 id="label-welcome">WELCOME TO THE ARENA</h1>
         
-        <div class="quad-answer-grid">
-            <div class="huge-answer-btn" onclick="commitPlayerAnswerChoice(0)" id="choice-0">Mercury</div>
-            <div class="huge-answer-btn" onclick="commitPlayerAnswerChoice(1)" id="choice-1">Venus</div>
-            <div class="huge-answer-btn" onclick="commitPlayerAnswerChoice(2)" id="choice-2">Earth</div>
-            <div class="huge-answer-btn" onclick="commitPlayerAnswerChoice(3)" id="choice-3">Mars</div>
+        <div style="display: flex; gap: 25px; width: 100%; max-width: 1000px; flex-wrap: wrap; justify-content: center;">
+            <div class="card-panel" style="flex: 1; min-width: 280px;">
+                <h3>JOIN RUNNING SESSION</h3>
+                <input type="text" id="input-pin" class="input-blook" placeholder="GAME PIN"><br>
+                <button class="btn-blook btn-green" onclick="submitJoinRequest()">ENTER BATTLE</button>
+            </div>
+
+            <div class="card-panel" style="flex: 1; min-width: 280px;">
+                <h3>HOST NEW MATCH</h3>
+                <label for="select-quiz" style="font-weight: bold; display: block; margin-bottom: 5px;">Select Active Quiz Layout</label>
+                <select id="select-quiz" class="input-blook" style="background-color: #0f172a;"></select>
+                <label for="select-mode" style="font-weight: bold; display: block; margin-bottom: 5px;">Select Game Engine Theme</label>
+                <select id="select-mode" class="input-blook" style="background-color: #0f172a;">
+                    <option value="classic">Classic Engine</option>
+                    <option value="gold">Gold Quest Engine</option>
+                    <option value="brawl">Battle Brawl Engine</option>
+                </select>
+                <button class="btn-blook btn-gold" onclick="initializeHostInstance()">SPIN UP SERVER</button>
+            </div>
+
+            <div class="card-panel" style="width: 100%; max-width: 1000px;">
+                <h3>QUIZ STUDIO CREATOR</h3>
+                <input type="text" id="quiz-title" class="input-blook" placeholder="Enter Quiz Category Name"><br>
+                <div id="question-stack" style="margin-bottom: 15px;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
+                        <input type="text" class="input-blook q-text" placeholder="Question Text" style="width:95%;"><br>
+                        <input type="text" class="input-blook q-a0" placeholder="Choice 1 (Correct Choice)" style="width:45%; margin:5px;">
+                        <input type="text" class="input-blook q-a1" placeholder="Choice 2" style="width:45%; margin:5px;"><br>
+                        <input type="text" class="input-blook q-a2" placeholder="Choice 3" style="width:45%; margin:5px;">
+                        <input type="text" class="input-blook q-a3" placeholder="Choice 4" style="width:45%; margin:5px;">
+                    </div>
+                </div>
+                <button class="btn-blook btn-purple" onclick="commitQuizToDatabase()">SAVE QUIZ PERMANENTLY</button>
+            </div>
         </div>
-    </main>
-</div>
+
+        <div id="panel-admin-override" class="app-container" style="display: none; width: 100%; max-width: 1000px;">
+            <div class="terminal-admin-frame">
+                <h2 style="color: var(--amber-gold); margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                    🚨 ADMINISTRATIVE RADAR OVERRIDE TERMINAL
+                </h2>
+                <p>System Token Verification Status: <span style="color: var(--emerald-green); font-weight: 900;">SUPERUSER BOUND: HridaanD</span></p>
+                
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0;">Account Operations</h3>
+                    <input type="text" id="admin-target-user" class="input-blook" placeholder="Target Account Username" style="max-width: 300px; display: inline-block; margin-right: 10px;">
+                    <button class="btn-blook btn-red" onclick="triggerAccountBan()">TERMINATE ACCOUNT PERMANIANENTLY</button>
+                </div>
+
+                <h3>Live Game Cluster Overview</h3>
+                <div id="telemetry-hook-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-game" class="game-layout" style="display: none;">
+        
+        <header class="game-top-bar">
+            <div class="stats-container">
+                <div class="stat-pill pill-score">Score: <span id="stat-score">100</span></div>
+                <div class="stat-pill pill-gold">Gold: <span id="stat-gold">100</span></div>
+                <div class="stat-pill pill-crypto">Crypto: <span id="stat-crypto">0</span></div>
+            </div>
+            
+            <h3 class="blook-font" id="game-pin-header" style="margin: 0; font-size: 1.5rem; color: rgba(255,255,255,0.6);">PIN: ------</h3>
+            
+            <div class="blook-timer" id="live-timer-bubble">9</div>
+        </header>
+
+        <div id="box-lobby-players" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-content: center; height: 60vh;">
+            </div>
+        
+        <div style="text-align: center;">
+            <button id="btn-master-start" class="btn-blook btn-green" style="display: none;" onclick="triggerHostGameBegin()">START BATTLEGROUND</button>
+        </div>
+
+        <main id="board-live-interactive" style="display: none; width: 100%;">
+            <div class="question-container">
+                <h2 id="label-active-question" class="massive-question-text">Loading Live Question Data...</h2>
+            </div>
+            
+            <div class="quiz-grid-matrix">
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(0)" id="choice-0">Choice 1</div>
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(1)" id="choice-1">Choice 2</div>
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(2)" id="choice-2">Choice 3</div>
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(3)" id="choice-3">Choice 4</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let token = null, activeUser = null, isHost = false;
+
+        function execAuth(route) {
+            const username = document.getElementById('input-user').value;
+            const password = document.getElementById('input-pass').value;
+            
+            fetch(`/api/auth/${route}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) return alert(data.error);
+                if(route === 'signup') return alert('Signup complete! Please login.');
+                
+                token = data.token;
+                activeUser = data.username;
+                
+                document.getElementById('view-auth').style.display = 'none';
+                document.getElementById('view-hub').style.display = 'flex';
+                document.getElementById('label-welcome').innerText = `WELCOME, ${activeUser.toUpperCase()}`;
+                
+                if (activeUser === 'HridaanD') {
+                    document.getElementById('panel-admin-override').style.display = 'block';
+                    socket.emit('requestAdminAuth', { username: 'HridaanD' });
+                }
+                updateQuizDropdown();
+            });
+        }
+
+        function updateQuizDropdown() {
+            fetch('/api/quizzes', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(quizzes => {
+                    const dropdown = document.getElementById('select-quiz');
+                    dropdown.innerHTML = quizzes.map(q => `<option value="${q._id}">${q.title}</option>`).join('');
+                });
+        }
+
+        function commitQuizToDatabase() {
+            const title = document.getElementById('quiz-title').value;
+            const text = document.querySelector('.q-text').value;
+            const a0 = document.querySelector('.q-a0').value;
+            const a1 = document.querySelector('.q-a1').value;
+            const a2 = document.querySelector('.q-a2').value;
+            const a3 = document.querySelector('.q-a3').value;
+
+            if(!title || !text || !a0) return alert('Fill out at least the title, question, and choice 1.');
+
+            const payload = {
+                title,
+                questions: [{ question: text, answers: [a0, a1, a2, a3], correctIndex: 0 }]
+            };
+
+            fetch('/api/quizzes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(() => {
+                alert('Quiz Saved Successfully!');
+                updateQuizDropdown();
+            });
+        }
+
+        function initializeHostInstance() {
+            const quizId = document.getElementById('select-quiz').value;
+            const gameMode = document.getElementById('select-mode').value;
+            if(!quizId) return alert('Create a quiz template down below first.');
+            isHost = true;
+            socket.emit('hostCreateRoom', { hostName: activeUser, quizId, gameMode });
+        }
+
+        function submitJoinRequest() {
+            const pin = document.getElementById('input-pin').value;
+            if(!pin) return alert('Input Game PIN');
+            socket.emit('playerJoinRoom', { pin, playerName: activeUser });
+        }
+
+        function triggerHostGameBegin() {
+            socket.emit('hostStartGame');
+        }
+
+        function commitPlayerAnswerChoice(idx) {
+            socket.emit('submitClientAnswer', { answerIndex: idx });
+        }
+
+        function triggerAccountBan() {
+            const target = document.getElementById('admin-target-user').value;
+            if(target) socket.emit('adminActionBanUser', { adminUser: activeUser, targetUser: target });
+        }
+
+        function remoteKillGame(pin) {
+            socket.emit('adminActionKillGame', { adminUser: activeUser, pin });
+        }
+
+        // Realtime Socket Handlers
+        socket.on('roomCreatedSuccess', (room) => {
+            document.getElementById('view-hub').style.display = 'none';
+            document.getElementById('view-game').style.display = 'flex';
+            document.getElementById('game-title-header').style.display = 'block';
+            document.getElementById('game-title-header').innerText = `MODE: ${room.mode.toUpperCase()}`;
+            document.getElementById('game-pin-header').innerText = `PIN: ${room.pin}`;
+            document.body.className = `theme-${room.mode}`;
+            if(isHost) document.getElementById('btn-master-start').style.display = 'inline-block';
+        });
+
+        socket.on('lobbyPlayerUpdate', (players) => {
+            document.getElementById('view-hub').style.display = 'none';
+            document.getElementById('view-game').style.display = 'flex';
+            const lobbyBox = document.getElementById('box-lobby-players');
+            lobbyBox.style.display = 'flex';
+            lobbyBox.innerHTML = players.map(p => `<span class="blook-font" style="padding:12px 24px; background:var(--panel-slate); border-bottom:4px solid rgba(0,0,0,0.3); border-radius:12px;">🎈 ${p.name}</span>`).join('');
+        });
+
+        socket.on('nextGameQuestion', (q) => {
+            document.getElementById('box-lobby-players').style.display = 'none';
+            document.getElementById('btn-master-start').style.display = 'none';
+            document.getElementById('game-title-header').style.display = 'none';
+            document.getElementById('board-live-interactive').style.display = 'block';
+            document.getElementById('label-active-question').innerText = q.question;
+            for(let i=0; i<4; i++) {
+                const element = document.getElementById(`choice-${i}`);
+                if(element) element.innerText = q.answers[i] || '---';
+            }
+        });
+
+        socket.on('answerFeedback', (data) => {
+            document.getElementById('stat-gold').innerText = data.currentResources;
+            alert(data.isCorrect ? "✨ Correct Answer!" : "🛑 Incorrect Answer!");
+        });
+
+        socket.on('gameFinishedSummary', (standings) => {
+            document.getElementById('board-live-interactive').style.display = 'none';
+            document.getElementById('game-title-header').style.display = 'block';
+            document.getElementById('game-title-header').innerText = "MATCH RESULTS";
+            const lobbyBox = document.getElementById('box-lobby-players');
+            lobbyBox.style.display = 'flex';
+            lobbyBox.innerHTML = standings.map((p, i) => `<h3 style='width:100%;'>#${i+1} ${p.name} — ${p.score} Pts</h3>`).join('');
+        });
+
+        socket.on('gameTerminated', (msg) => {
+            alert(msg);
+            location.reload();
+        });
+
+        socket.on('forceDisconnectBoot', (msg) => {
+            alert(msg);
+            location.reload();
+        });
+
+        socket.on('telemetryUpdate', (rooms) => {
+            if (activeUser !== 'HridaanD') return;
+            const container = document.getElementById('telemetry-hook-container');
+            if(rooms.length === 0) {
+                container.innerHTML = '<p style="color:gray; font-style:italic;">No active game clusters running across nodes.</p>';
+                return;
+            }
+            container.innerHTML = rooms.map(r => `
+                <div class="row-telemetry">
+                    <div>
+                        <b style="color:var(--amber-gold)">[PIN: ${r.pin}]</b> Host: <b>${r.host}</b> | Title: <i>${r.title}</i>
+                        <br><small>State: <b>${r.state}</b> | Active: <b>${r.playerCount}</b></small>
+                    </div>
+                    <button class="btn-blook btn-red" style="font-size:0.9rem; padding:6px 12px; border-radius:8px;" onclick="remoteKillGame('${r.pin}')">KILL GAME</button>
+                </div>
+            `).join('');
+        });
+
+        socket.on('adminActionSuccess', (msg) => alert(msg));
+        socket.on('errorNotification', (msg) => alert(msg));
+    </script>
+</body>
+</html>
