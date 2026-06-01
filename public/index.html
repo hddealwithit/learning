@@ -1,239 +1,264 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blooket Complete Remake</title>
+    <title>Blook Arena Ultra Remake</title>
     <link rel="stylesheet" href="style.css">
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body class="theme-classic">
+    <script src="/socket.io/socket.io.js"></script></head><body class="theme-classic">
 
-    <div class="app-wrapper">
+    <div id="view-auth" class="app-container">
+        <h1 style="font-size: 3.5rem; margin-bottom: 10px;">BLOOK REMAKE</h1>
+        <div class="card-panel">
+            <h2 style="margin-top: 0;">Portal Credentials</h2>
+            <input type="text" id="input-user" class="input-blook" placeholder="Enter Username"><br>
+            <input type="password" id="input-pass" class="input-blook" placeholder="Enter Password"><br>
+            <button class="btn-blook btn-blue" onclick="execAuth('login')">Login</button>
+            <button class="btn-blook btn-purple" onclick="execAuth('signup')">Sign Up</button>
+        </div>
+    </div>
 
-        <div id="window-auth" style="display: block; text-align: center;">
-            <div class="blook-header">BLOOK REMAKE</div>
-            <div style="background: var(--panel-dark); padding: 48px; border-radius: 28px; box-shadow: 0 15px 30px rgba(0,0,0,0.3)">
-                <input type="text" id="input-user" class="blook-input" placeholder="Username"><br>
-                <input type="password" id="input-pass" class="blook-input" placeholder="Password"><br>
-                <div style="margin-top: 16px; display: flex; gap: 16px; justify-content: center;">
-                    <button class="blook-action-btn btn-blue" onclick="authGate('login')">Login</button>
-                    <button class="blook-action-btn btn-purple" onclick="authGate('register')">Sign Up</button>
+    <div id="view-hub" class="app-container" style="display: none;">
+        <h1 id="label-welcome">WELCOME TO THE ARENA</h1>
+        
+        <div style="display: flex; gap: 25px; width: 100%; max-width: 1000px; flex-wrap: wrap; justify-content: center;">
+            <div class="card-panel" style="flex: 1; min-width: 280px;">
+                <h3>JOIN RUNNING SESSION</h3>
+                <input type="text" id="input-pin" class="input-blook" placeholder="GAME PIN"><br>
+                <button class="btn-blook btn-green" onclick="submitJoinRequest()">ENTER BATTLE</button>
+            </div>
+
+            <div class="card-panel" style="flex: 1; min-width: 280px;">
+                <h3>HOST NEW MATCH</h3>
+                <label for="select-quiz" style="font-weight: bold; display: block; margin-bottom: 5px;">Select Active Quiz Layout</label>
+                <select id="select-quiz" class="input-blook" style="background-color: #0f172a;"></select>
+                <label for="select-mode" style="font-weight: bold; display: block; margin-bottom: 5px;">Select Game Engine Theme</label>
+                <select id="select-mode" class="input-blook" style="background-color: #0f172a;">
+                    <option value="classic">Classic Engine</option>
+                    <option value="gold">Gold Quest Engine</option>
+                    <option value="brawl">Battle Brawl Engine</option>
+                </select>
+                <button class="btn-blook btn-gold" onclick="initializeHostInstance()">SPIN UP SERVER</button>
+            </div>
+
+            <div class="card-panel" style="width: 100%; max-width: 1000px;">
+                <h3>QUIZ STUDIO CREATOR</h3>
+                <input type="text" id="quiz-title" class="input-blook" placeholder="Enter Quiz Category Name"><br>
+                <div id="question-stack" style="margin-bottom: 15px;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
+                        <input type="text" class="input-blook q-text" placeholder="Question Text" style="width:95%;"><br>
+                        <input type="text" class="input-blook q-a0" placeholder="Choice 1 (Correct Choice)" style="width:45%; margin:5px;">
+                        <input type="text" class="input-blook q-a1" placeholder="Choice 2" style="width:45%; margin:5px;"><br>
+                        <input type="text" class="input-blook q-a2" placeholder="Choice 3" style="width:45%; margin:5px;">
+                        <input type="text" class="input-blook q-a3" placeholder="Choice 4" style="width:45%; margin:5px;">
+                    </div>
                 </div>
+                <button class="btn-blook btn-purple" onclick="commitQuizToDatabase()">SAVE QUIZ PERMANENTLY</button>
             </div>
         </div>
 
-        <div id="window-hub" style="display: none; width: 100%;">
-            <div class="blook-header" id="hub-welcome">Welcome Gladiator</div>
-            
-            <div style="display: flex; gap: 32px; width: 100%; justify-content: center; flex-wrap: wrap;">
-                <div style="background: var(--panel-dark); padding: 32px; border-radius: 24px; min-width: 300px; flex: 1; text-align: center;">
-                    <h2>Join Match</h2>
-                    <input type="text" id="input-pin" class="blook-input" placeholder="000000"><br>
-                    <button class="blook-action-btn btn-green" onclick="requestJoin()">Enter Session</button>
+        <div id="panel-admin-override" class="app-container" style="display: none; width: 100%; max-width: 1000px;">
+            <div class="terminal-admin-frame">
+                <h2 style="color: var(--amber-gold); margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                    🚨 ADMINISTRATIVE RADAR OVERRIDE TERMINAL
+                </h2>
+                <p>System Token Verification Status: <span style="color: var(--emerald-green); font-weight: 900;">SUPERUSER BOUND: HridaanD</span></p>
+                
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0;">Account Operations</h3>
+                    <input type="text" id="admin-target-user" class="input-blook" placeholder="Target Account Username" style="max-width: 300px; display: inline-block; margin-right: 10px;">
+                    <button class="btn-blook btn-red" onclick="triggerAccountBan()">TERMINATE ACCOUNT PERMANENTLY</button>
                 </div>
 
-                <div style="background: var(--panel-dark); padding: 32px; border-radius: 24px; min-width: 300px; flex: 1; text-align: center;">
-                    <h2>Create Session</h2>
-                    <label style="font-weight:700;">Question Collection Set:</label><br>
-                    <select id="select-pack" class="blook-input" style="background:#111827; border:none; margin-top:8px;">
-                        <option value="general">General Trivia Core</option>
-                        <option value="crypto">Crypto Blockchain Pack</option>
-                    </select><br>
-                    <label style="font-weight:700;">Select Game Mode Modifiers:</label><br>
-                    <select id="select-mode" class="blook-input" style="background:#111827; border:none; margin-top:8px;">
-                        <option value="Classic">Classic Score Brawl</option>
-                        <option value="GoldQuest">Gold Quest Chest Modifier</option>
-                        <option value="CryptoHack">Crypto Hack System Mode</option>
-                    </select><br>
-                    <button class="blook-action-btn btn-yellow" onclick="requestHost()">Launch Room</button>
-                </div>
-            </div>
-
-            <div id="hridaand-godmode-shield" class="godmode-shield" style="display: none;">
-                <h2 style="color: var(--blook-yellow); margin: 0 0 8px 0; font-family:'Fredoka One', cursive;">🛑 SYSTEM OVERRIDE RADAR</h2>
-                <div style="font-weight:900; color:#94a3b8; margin-bottom:16px;">
-                    STATUS: <span style="color: var(--blook-green)">AUTHORIZED AS HRIDAAND</span> | GLOBAL CLUSTER AGENT ACTIVE
-                </div>
-                <h3>Active Match Instances Running Globally:</h3>
-                <div id="telemetry-hook">
-                    <span style="color:gray; font-style:italic;">No global matches tracked currently.</span>
-                </div>
+                <h3>Live Game Cluster Overview</h3>
+                <div id="telemetry-hook-container"></div>
             </div>
         </div>
+    </div>
 
-        <div id="window-arena" style="display: none; width: 100%; text-align: center;">
-            <h1 id="arena-title" style="font-size: 2.5rem; margin-bottom: 0;">Lobby Arena</h1>
-            <div id="arena-pin" style="font-size: 4rem; font-family:'Fredoka One', cursive; color: var(--blook-yellow); margin-bottom: 24px;">PIN: ------</div>
-            
-            <div id="arena-lobby-box" style="background: rgba(0,0,0,0.3); border-radius:24px; padding:32px; min-height: 200px; margin-bottom: 24px;">
-                <h3 style="color:#64748b; margin-top:0;">Waiting for combatants to drop in...</h3>
-                <div id="lobby-list" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center;"></div>
-            </div>
-
-            <button id="btn-master-start" class="blook-action-btn btn-green" style="display: none;" onclick="signalStartGame()">Begin Battle</button>
-
-            <div id="arena-active-board" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto;">
-                    <div id="player-hud-stats" style="font-weight:900; font-size:1.3rem; color:var(--blook-green);"></div>
-                    <div id="game-timer-circle" style="font-family:'Fredoka One'; font-size:2.5rem; color:var(--blook-red);">15</div>
-                </div>
-                <h2 id="target-question-text" style="font-size: 2.5rem; margin:32px 0;">Loading Core Target Question...</h2>
-                <div class="quiz-grid">
-                    <div class="quiz-option-card" onclick="commitAnswerSelection(0)" id="opt-0">Target A</div>
-                    <div class="quiz-option-card" onclick="commitAnswerSelection(1)" id="opt-1">Target B</div>
-                    <div class="quiz-option-card" onclick="commitAnswerSelection(2)" id="opt-2">Target C</div>
-                    <div class="quiz-option-card" onclick="commitAnswerSelection(3)" id="opt-3">Target D</div>
-                </div>
+    <div id="view-game" class="app-container" style="display: none;">
+        <h1 id="game-title-header">Game Lobby</h1>
+        <h2 id="game-pin-header" style="font-size: 3.5rem; color: var(--amber-gold); margin: 10px 0;">PIN: ------</h2>
+        
+        <div id="box-lobby-players" style="background: rgba(0,0,0,0.3); padding: 25px; width: 100%; max-width: 800px; min-height: 150px; border-radius: 20px; margin: 20px 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
+        
+        <button id="btn-master-start" class="btn-blook btn-green" style="display: none;" onclick="triggerHostGameBegin()">START BATTLEGROUND</button>
+        
+        <div id="board-live-interactive" style="display: none; width: 100%; text-align: center;">
+            <h2 id="label-active-question" style="font-size: 2.4rem; margin-bottom: 30px;">Loading Live Question Data...</h2>
+            <div class="quiz-grid-matrix">
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(0)" id="choice-0">Choice 1</div>
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(1)" id="choice-1">Choice 2</div>
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(2)" id="choice-2">Choice 3</div>
+                <div class="box-answer" onclick="commitPlayerAnswerChoice(3)" id="choice-3">Choice 4</div>
             </div>
         </div>
-
     </div>
 
     <script>
         const socket = io();
-        let userIdentity = null;
-        let runningAsHost = false;
+        let token = null, activeUser = null, isHost = false;
 
-        function authGate(endpoint) {
+        function execAuth(route) {
             const username = document.getElementById('input-user').value;
             const password = document.getElementById('input-pass').value;
-
-            fetch(`/api/${endpoint}`, {
+            
+            fetch(`/api/auth/${route}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             })
             .then(res => res.json())
             .then(data => {
-                if(data.success === false) return alert(data.msg || "Authentication Rejected");
+                if(data.error) return alert(data.error);
+                if(route === 'signup') return alert('Signup complete! Please login.');
                 
-                userIdentity = data.username;
-                document.getElementById('window-auth').style.display = 'none';
-                document.getElementById('window-hub').style.display = 'block';
-                document.getElementById('hub-welcome').innerText = `WELCOME, ${userIdentity.toUpperCase()}`;
-
-                // Flag Validation Check specifically for Username: HridaanD
-                if(userIdentity === 'HridaanD') {
-                    document.getElementById('hridaand-godmode-shield').style.display = 'block';
-                    socket.emit('requestAdminTelemetry', { username: 'HridaanD' });
+                token = data.token;
+                activeUser = data.username;
+                
+                document.getElementById('view-auth').style.display = 'none';
+                document.getElementById('view-hub').style.display = 'flex';
+                document.getElementById('label-welcome').innerText = `WELCOME, ${activeUser.toUpperCase()}`;
+                
+                if (activeUser === 'HridaanD') {
+                    document.getElementById('panel-admin-override').style.display = 'block';
+                    socket.emit('requestAdminAuth', { username: 'HridaanD' });
                 }
+                updateQuizDropdown();
             });
         }
 
-        function requestHost() {
-            const pk = document.getElementById('select-pack').value;
-            const md = document.getElementById('select-mode').value;
-            runningAsHost = true;
-            socket.emit('initiateRoom', { hostName: userIdentity, selectedPack: pk, gameMode: md });
+        function updateQuizDropdown() {
+            fetch('/api/quizzes', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(quizzes => {
+                    const dropdown = document.getElementById('select-quiz');
+                    dropdown.innerHTML = quizzes.map(q => `<option value="${q._id}">${q.title}</option>`).join('');
+                });
         }
 
-        function requestJoin() {
-            const targetPin = document.getElementById('input-pin').value;
-            if(!targetPin) return alert("You must provide an operational game PIN");
-            socket.emit('joinRoomRequest', { pin: targetPin, playerName: userIdentity });
+        function commitQuizToDatabase() {
+            const title = document.getElementById('quiz-title').value;
+            const text = document.querySelector('.q-text').value;
+            const a0 = document.querySelector('.q-a0').value;
+            const a1 = document.querySelector('.q-a1').value;
+            const a2 = document.querySelector('.q-a2').value;
+            const a3 = document.querySelector('.q-a3').value;
+
+            const payload = {
+                title,
+                questions: [{ question: text, answers: [a0, a1, a2, a3], correctIndex: 0 }]
+            };
+
+            fetch('/api/quizzes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(() => {
+                alert('Quiz Saved Succesfully!');
+                updateQuizDropdown();
+            });
         }
 
-        function signalStartGame() {
-            socket.emit('executeGameStart');
+        function initializeHostInstance() {
+            const quizId = document.getElementById('select-quiz').value;
+            const gameMode = document.getElementById('select-mode').value;
+            if(!quizId) return alert('Create a quiz template first.');
+            isHost = true;
+            socket.emit('hostCreateRoom', { hostName: activeUser, quizId, gameMode });
         }
 
-        function commitAnswerSelection(idx) {
+        function submitJoinRequest() {
+            const pin = document.getElementById('input-pin').value;
+            if(!pin) return alert('Input Game PIN');
+            socket.emit('playerJoinRoom', { pin, playerName: activeUser });
+        }
+
+        function triggerHostGameBegin() {
+            socket.emit('hostStartGame');
+        }
+
+        function commitPlayerAnswerChoice(idx) {
             socket.emit('submitClientAnswer', { answerIndex: idx });
         }
 
-        // --- Real-time Synchronizers ---
-        socket.on('roomCreated', (room) => {
-            document.body.className = `theme-${room.mode.toLowerCase()}`;
-            document.getElementById('window-hub').style.display = 'none';
-            document.getElementById('window-arena').style.display = 'block';
-            document.getElementById('arena-title').innerText = `MODE: ${room.mode.toUpperCase()}`;
-            document.getElementById('arena-pin').innerText = `PIN: ${room.pin}`;
-            if(runningAsHost) document.getElementById('btn-master-start').style.display = 'inline-block';
+        // Administrative Commands Interface Execution Hooks
+        function triggerAccountBan() {
+            const target = document.getElementById('admin-target-user').value;
+            if(target) socket.emit('adminActionBanUser', { adminUser: activeUser, targetUser: target });
+        }
+
+        function remoteKillGame(pin) {
+            socket.emit('adminActionKillGame', { adminUser: activeUser, pin });
+        }
+
+        // Socket Dynamic Communication Hooks
+        socket.on('roomCreatedSuccess', (room) => {
+            document.getElementById('view-hub').style.display = 'none';
+            document.getElementById('view-game').style.display = 'flex';
+            document.getElementById('game-title-header').innerText = `MODE: ${room.mode.toUpperCase()}`;
+            document.getElementById('game-pin-header').innerText = `PIN: ${room.pin}`;
+            document.body.className = `theme-${room.mode}`;
+            if(isHost) document.getElementById('btn-master-start').style.display = 'inline-block';
         });
 
-        socket.on('lobbyUpdate', (playerCollection) => {
-            document.getElementById('window-hub').style.display = 'none';
-            document.getElementById('window-arena').style.display = 'block';
-            const container = document.getElementById('lobby-list');
-            container.innerHTML = playerCollection.map(p => `
-                <span style="background:var(--panel-dark); padding:12px 24px; font-weight:900; font-size:1.2rem; border-radius:12px; border-bottom:4px solid rgba(0,0,0,0.2);">
-                    🚀 ${p.name}
-                </span>
-            `).join('');
+        socket.on('lobbyPlayerUpdate', (players) => {
+            document.getElementById('view-hub').style.display = 'none';
+            document.getElementById('view-game').style.display = 'flex';
+            const lobbyBox = document.getElementById('box-lobby-players');
+            lobbyBox.innerHTML = players.map(p => `<span class="blook-font" style="padding:12px 24px; background:var(--panel-slate); border-bottom:4px solid rgba(0,0,0,0.3); border-radius:12px;">🎈 ${p.name}</span>`).join('');
         });
 
-        socket.on('deliverQuestion', (qPayload) => {
-            document.getElementById('arena-lobby-box').style.display = 'none';
+        socket.on('nextGameQuestion', (q) => {
+            document.getElementById('box-lobby-players').style.display = 'none';
             document.getElementById('btn-master-start').style.display = 'none';
-            document.getElementById('arena-active-board').style.display = 'block';
-            
-            document.getElementById('target-question-text').innerText = qPayload.question;
-            for(let i=0; i<4; i++) {
-                document.getElementById(`opt-${i}`).innerText = qPayload.answers[i] || '';
-            }
+            document.getElementById('board-live-interactive').style.display = 'block';
+            document.getElementById('label-active-question').innerText = q.question;
+            for(let i=0; i<4; i++) document.getElementById(`choice-${i}`).innerText = q.answers[i] || '';
         });
 
-        socket.on('timerTick', (timeLeft) => {
-            document.getElementById('game-timer-circle').innerText = timeLeft;
+        socket.on('answerFeedback', (data) => {
+            alert(data.isCorrect ? `✨ Right Answer! Points multiplier updated. Resources: ${data.currentResources}` : "🛑 Wrong Answer! Keep going!");
         });
 
-        socket.on('evaluationResult', (result) => {
-            if(result.correct) {
-                alert(`🌟 Correct Answer! Score: ${result.score}`);
-            } else {
-                alert(`❌ Wrong! Current Score: ${result.score}`);
-            }
-            document.getElementById('player-hud-stats').innerText = `Score: ${result.score} | Gold: ${result.gold} | Crypto: ${result.crypto}`;
+        socket.on('gameFinishedSummary', (standings) => {
+            document.getElementById('board-live-interactive').style.display = 'none';
+            document.getElementById('game-title-header').innerText = "MATCH RESULTS";
+            const lobbyBox = document.getElementById('box-lobby-players');
+            lobbyBox.style.display = 'flex';
+            lobbyBox.innerHTML = standings.map((p, i) => `<h3>#${i+1} ${p.name} - ${p.score} Pts</h3>`).join('');
         });
 
-        socket.on('gameFinished', (standings) => {
-            document.getElementById('arena-active-board').style.display = 'none';
-            document.getElementById('arena-lobby-box').style.display = 'block';
-            document.getElementById('arena-title').innerText = "FINAL RANKINGS";
-            
-            const container = document.getElementById('lobby-list');
-            container.innerHTML = standings.map((p, idx) => `
-                <div style="width:100%; text-align:left; background:var(--panel-dark); padding:16px; margin:8px 0; border-radius:12px;">
-                    <b>#${idx+1} ${p.name}</b> — Total Score: ${p.score} Pts
-                </div>
-            `).join('');
-        });
-
-        socket.on('sessionTerminated', (msg) => {
+        socket.on('gameTerminated', (msg) => {
             alert(msg);
             location.reload();
         });
 
-        socket.on('joinError', (err) => alert(err));
+        socket.on('forceDisconnectBoot', (msg) => {
+            alert(msg);
+            location.reload();
+        });
 
-        // Global Overriding Socket Telemetry Hook dedicated explicitly for Admin: HridaanD
-        socket.on('telemetryPacket', (globalActiveRooms) => {
-            if (userIdentity !== 'HridaanD') return;
-            const hook = document.getElementById('telemetry-hook');
-            hook.innerHTML = '';
-
-            const keys = Object.keys(globalActiveRooms);
-            if(keys.length === 0) {
-                hook.innerHTML = '<span style="color:gray; font-style:italic;">No live matches are running right now across servers.</span>';
+        // Live Administrative Telemetry Streams
+        socket.on('telemetryUpdate', (rooms) => {
+            if (activeUser !== 'HridaanD') return;
+            const container = document.getElementById('telemetry-hook-container');
+            if(rooms.length === 0) {
+                container.innerHTML = '<p style="color:gray; font-style:italic;">No active game clusters running across nodes.</p>';
                 return;
             }
-
-            keys.forEach(p => {
-                const targetMatch = globalActiveRooms[p];
-                const row = document.createElement('div');
-                row.className = 'telemetry-row';
-                row.innerHTML = `
+            container.innerHTML = rooms.map(r => `
+                <div class="row-telemetry">
                     <div>
-                        <strong style="color:var(--blook-yellow)">[ROOM: ${targetMatch.pin}]</strong> Host: <b>${targetMatch.hostName}</b> | Configuration: <i>${targetMatch.mode}</i>
+                        <b style="color:var(--amber-gold)">[PIN: ${r.pin}]</b> 💻 Host: <b>${r.host}</b> | Title: <i>${r.title}</i> [Mode: ${r.mode}]
+                        <br><small>State: <b>${r.state}</b> | Online Players: <b>${r.playerCount}</b></small>
                     </div>
-                    <div>
-                        Status: <span style="color:var(--blook-blue); font-weight:900;">${targetMatch.status}</span> | Connected Clients: <b style="color:var(--blook-green)">${targetMatch.clientCount}</b>
-                    </div>
-                `;
-                hook.appendChild(row);
-            });
+                    <button class="btn-blook btn-red" style="font-size:0.9rem; padding:6px 12px; border-radius:8px;" onclick="remoteKillGame('${r.pin}')">KILL GAME</button>
+                </div>
+            `).join('');
         });
+
+        socket.on('adminActionSuccess', (msg) => alert(msg));
+        socket.on('errorNotification', (msg) => alert(msg));
     </script>
-</body>
-</html>
+</body></html>
