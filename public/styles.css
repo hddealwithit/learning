@@ -1,119 +1,101 @@
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
 
 :root {
-    --bg-dark: #121824;
-    --panel-bg: #1f293d;
-    --accent-primary: #3b82f6;
-    --accent-success: #10b981;
-    --accent-warning: #f59e0b;
-    --accent-danger: #ef4444;
+    --bg-dark: #0f172a;
+    --panel-bg: #1e293b;
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
     --accent-purple: #8b5cf6;
-    
-    /* Blooket 3D Shadow Effect */
-    --blook-shadow: 0 8px 0px rgba(0, 0, 0, 0.2);
+    --blook-shadow: 0 6px 0px rgba(0, 0, 0, 0.25);
 }
 
 body {
     margin: 0;
     font-family: 'Nunito', sans-serif;
-    background-color: var(--bg-dark);
+    background: radial-gradient(circle at top, #1e1b4b, #0f172a);
     color: #ffffff;
-    overflow-x: hidden;
+    min-height: 100vh;
 }
-
-/* Super colorful, animated backgrounds for Game Modes */
-.game-mode-classic { background: linear-gradient(135deg, #093637, #1c15c0); }
-.game-mode-brawl { background: linear-gradient(135deg, #f857a6, #ff5858); }
-.game-mode-gold { background: linear-gradient(135deg, #f12711, #f5af19); }
 
 .container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    padding: 30px 20px;
+    text-align: center;
 }
 
-/* Blooket-style Big, Punchy Header */
 h1, h2, h3 {
     font-family: 'Fredoka One', cursive;
-    text-shadow: 2px 4px 0px rgba(0,0,0,0.3);
+    text-shadow: 3px 3px 0px rgba(0,0,0,0.4);
     letter-spacing: 1px;
 }
 
-/* Massive 3D Buttons */
+h1 { font-size: 3.5rem; color: #f43f5e; margin-bottom: 5px; }
+
+/* 3D Game Buttons */
 .blook-btn {
     font-family: 'Fredoka One', cursive;
-    font-size: 1.5rem;
-    padding: 15px 40px;
+    font-size: 1.2rem;
+    padding: 12px 30px;
     border: none;
-    border-radius: 16px;
+    border-radius: 14px;
     color: white;
     cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
     box-shadow: var(--blook-shadow);
+    transition: transform 0.1s, box-shadow 0.1s;
     text-transform: uppercase;
+    margin: 5px;
 }
-
-.blook-btn-blue { background-color: var(--accent-primary); border-bottom: 6px solid #1d4ed8; }
-.blook-btn-green { background-color: var(--accent-success); border-bottom: 6px solid #047857; }
-.blook-btn-orange { background-color: var(--accent-warning); border-bottom: 6px solid #b45309; }
-.blook-btn-purple { background-color: var(--accent-purple); border-bottom: 6px solid #6d28d9; }
-
 .blook-btn:active {
     transform: translateY(4px);
-    box-shadow: 0 4px 0px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 0px rgba(0,0,0,0.2);
+}
+.btn-blue { background: var(--accent-blue); border-bottom: 5px solid #1d4ed8; }
+.btn-green { background: var(--accent-green); border-bottom: 5px solid #047857; }
+.btn-orange { background: var(--accent-orange); border-bottom: 5px solid #b45309; }
+.btn-purple { background: var(--accent-purple); border-bottom: 5px solid #6d28d9; }
+
+/* Custom Creator Inputs */
+.blook-input, .blook-select {
+    width: 85%;
+    max-width: 400px;
+    padding: 14px;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    border: 3px solid #334155;
+    background: #0f172a;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 15px;
+    outline: none;
+}
+.blook-input:focus { border-color: var(--accent-blue); }
+
+/* Panels */
+.game-card {
+    background: var(--panel-bg);
+    border-radius: 24px;
+    padding: 35px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    border: 2px solid #334155;
+    margin-top: 25px;
 }
 
-/* Grid layout for answers */
+/* Dynamic Answer Layout */
 .answer-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    gap: 15px;
     width: 100%;
-    max-width: 800px;
-    margin-top: 40px;
+    margin-top: 25px;
 }
-
 .answer-card {
-    border-radius: 20px;
-    padding: 40px;
-    font-size: 1.8rem;
+    border-radius: 16px;
+    padding: 30px;
+    font-size: 1.5rem;
     font-weight: 900;
-    text-align: center;
     cursor: pointer;
     box-shadow: var(--blook-shadow);
-    transition: transform 0.1s;
-}
-
-.answer-card:nth-child(1) { background-color: #e63946; border-bottom: 8px solid #b81d24; }
-.answer-card:nth-child(2) { background-color: #457b9d; border-bottom: 8px solid #2a526e; }
-.answer-card:nth-child(3) { background-color: #52b788; border-bottom: 8px solid #347a58; }
-.answer-card:nth-child(4) { background-color: #fca311; border-bottom: 8px solid #c47b07; }
-
-.answer-card:active {
-    transform: translateY(6px);
-    box-shadow: 0 2px 0px rgba(0,0,0,0.2);
-}
-
-/* Admin Dashboard layout */
-.admin-wrapper {
-    background: #25334d;
-    border: 4px solid var(--accent-warning);
-    border-radius: 24px;
-    padding: 30px;
-    width: 100%;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-}
-
-.live-game-badge {
-    background: #121824;
-    border-left: 6px solid var(--accent-success);
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    color: white;
+    text-shadow: 1
