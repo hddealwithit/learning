@@ -1,227 +1,269 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Global State Engines
+// ---------------------------------------------------------
+// DATABASE SCHEMAS & MODELS (Persistent Data Layer)
+// ---------------------------------------------------------
+const UserSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    isBanned: { type: Boolean, default: false }
+});
+const User = mongoose.model('User', UserSchema);
+
+const QuizSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    creator: { type: String, required: true },
+    questions: [{
+        question: String,
+        answers: [String],
+        correctIndex: Number
+    }]
+});
+const Quiz = mongoose.model('Quiz', QuizSchema);
+
+// In-Memory Live Game States
 const activeRooms = {};
-const userDatabase = {
-    'HridaanD': { password: 'adminPassword123', tokens: 1000, blooks: ['Gold Astronaut'], isAdmin: true }
+
+// JWT Authentication Middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Access denied' });
+    
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || 'FALLBACK_SECRET', (err, user) => {
+        if (err) return res.status(403).json({ error: 'Session invalid' });
+        req.user = user;
+        next();
+    });
 };
 
-// Rich Question Bank
-const questionPacks = {
-    general: [
-        { q: "What is the capital of France?", a: ["Paris", "London", "Berlin", "Rome"], c: 0 },
-        { q: "Which planet is closest to the Sun?", a: ["Earth", "Mars", "Mercury", "Venus"], c: 2 },
-        { q: "What is 7 multiplied by 8?", a: ["54", "56", "62", "64"], c: 1 },
-        { q: "Which gas do plants absorb from the atmosphere?", a: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], c: 2 },
-        { q: "How many bones are in an adult human body?", a: ["186", "206", "216", "296"], c: 1 }
-    ],
-    crypto: [
-        { q: "What does Blockchain secure?", a: ["Data Records", "Physical Gold", "Internet Cables", "Software Licenses"], c: 0 },
-        { q: "What was the first decentralized cryptocurrency?", a: ["Ethereum", "Litecoin", "Bitcoin", "Dogecoin"], c: 2 }
-    ]
-};
+// ---------------------------------------------------------
+// HTTP API ROUTING (Authentication & Quizzes)
+// ---------------------------------------------------------
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
+        
+        const existing = await User.findOne({ username });
+        if (existing) return res.status(400).json({ error: 'Username taken' });
 
-// REST APIs for Auth & User Saves
-app.post('/api/register', (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ success: false, msg: "Missing fields" });
-    if (userDatabase[username]) return res.status(400).json({ success: false, msg: "User exists" });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, password: hashedPassword });
+        await newUser.save();
 
-    userDatabase[username] = {
-        password,
-        tokens: 50,
-        blooks: ['Default Blook'],
-        isAdmin: username === 'HridaanD'
-    };
-    res.json({ success: true, username, isAdmin: userDatabase[username].isAdmin });
-});
-
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const user = userDatabase[username];
-    if (!user || user.password !== password) {
-        return res.status(401).json({ success: false, msg: "Invalid credentials" });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    res.json({ success: true, username, isAdmin: user.isAdmin, tokens: user.tokens, blooks: user.blooks });
 });
 
-// Socket.io Real-time Game State Machine
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+        if (!user) return res.status(400).json({ error: 'User not found' });
+        if (user.isBanned) return res.status(403).json({ error: 'This account has been terminated.' });
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) return res.status(400).json({ error: 'Incorrect password' });
+
+        const token = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET || 'FALLBACK_SECRET');
+        res.json({ success: true, token, username: user.username });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Quiz Operations
+app.post('/api/quizzes', authenticateToken, async (req, res) => {
+    try {
+        const { title, questions } = req.body;
+        const newQuiz = new Quiz({ title, creator: req.user.username, questions });
+        await newQuiz.save();
+        res.json({ success: true, quiz: newQuiz });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/quizzes', authenticateToken, async (req, res) => {
+    const quizzes = await Quiz.find({});
+    res.json(quizzes);
+});
+
+// ---------------------------------------------------------
+// REAL-TIME MULTIPLAYER ORCHESTRATION & ADMIN CONTROL
+// ---------------------------------------------------------
+function pushTelemetryToAdmin() {
+    const dataSummary = Object.keys(activeRooms).map(pin => ({
+        pin,
+        host: activeRooms[pin].host,
+        title: activeRooms[pin].title,
+        mode: activeRooms[pin].mode,
+        playerCount: Object.keys(activeRooms[pin].players).length,
+        state: activeRooms[pin].state
+    }));
+    io.to('admin-stream').emit('telemetryUpdate', dataSummary);
+}
+
 io.on('connection', (socket) => {
-    let trackingRoom = null;
-    let registeredIdentity = null;
+    let internalPin = null;
 
-    // Secure Admin Stream Verification for HridaanD
-    socket.on('requestAdminTelemetry', ({ username }) => {
+    // Secure Admin Socket Connection Request
+    socket.on('requestAdminAuth', ({ username }) => {
         if (username === 'HridaanD') {
-            socket.join('admin-telemetry-stream');
-            socket.emit('telemetryPacket', compileGlobalTelemetry());
+            socket.join('admin-stream');
+            pushTelemetryToAdmin();
         }
     });
 
-    // Room Initialization (Host side)
-    socket.on('initiateRoom', ({ hostName, selectedPack, gameMode }) => {
-        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    // Terminate User Account (HridaanD System Command Override)
+    socket.on('adminActionBanUser', async ({ adminUser, targetUser }) => {
+        if (adminUser !== 'HridaanD') return;
+        await User.findOneAndUpdate({ username: targetUser }, { isBanned: true });
         
-        activeRooms[pin] = {
-            pin,
-            hostId: socket.id,
-            hostName,
-            pack: selectedPack || 'general',
-            mode: gameMode || 'Classic',
-            status: 'LOBBY', // LOBBY, RUNNING, REVEAL, LEADERBOARD
-            players: {},
-            questionIndex: 0,
-            timer: 0,
-            timerInterval: null
-        };
-
-        trackingRoom = pin;
-        registeredIdentity = hostName;
-        socket.join(pin);
-        
-        socket.emit('roomCreated', activeRooms[pin]);
-        io.to('admin-telemetry-stream').emit('telemetryPacket', compileGlobalTelemetry());
-    });
-
-    // Player Client Joining
-    socket.on('joinRoomRequest', ({ pin, playerName }) => {
-        const room = activeRooms[pin];
-        if (!room) return socket.emit('joinError', 'Room does not exist!');
-        if (room.status !== 'LOBBY') return socket.emit('joinError', 'Game already in progress!');
-        
-        room.players[socket.id] = {
-            name: playerName,
-            score: 0,
-            gold: 100,
-            crypto: 0,
-            multiplier: 1.0,
-            lastAnswerCorrect: false
-        };
-
-        trackingRoom = pin;
-        registeredIdentity = playerName;
-        socket.join(pin);
-
-        io.to(pin).emit('lobbyUpdate', Object.values(room.players));
-        io.to('admin-telemetry-stream').emit('telemetryPacket', compileGlobalTelemetry());
-    });
-
-    // Live Game Engine Loop Execution
-    socket.on('executeGameStart', () => {
-        const room = activeRooms[trackingRoom];
-        if (room && room.hostId === socket.id) {
-            room.status = 'RUNNING';
-            runNextQuestionCycle(trackingRoom);
-            io.to('admin-telemetry-stream').emit('telemetryPacket', compileGlobalTelemetry());
-        }
-    });
-
-    // Live Evaluation Engine
-    socket.on('submitClientAnswer', ({ answerIndex }) => {
-        const room = activeRooms[trackingRoom];
-        if (!room || room.status !== 'RUNNING') return;
-
-        const player = room.players[socket.id];
-        const pack = questionPacks[room.pack];
-        const currentQ = pack[room.questionIndex];
-
-        if (player && currentQ) {
-            if (parseInt(answerIndex) === currentQ.c) {
-                const baseReward = 100;
-                player.score += Math.floor(baseReward * player.multiplier);
-                
-                // Mode specific modifiers
-                if (room.mode === 'GoldQuest') {
-                    const stolenGold = Math.floor(Math.random() * 80) + 20;
-                    player.gold += stolenGold;
-                } else if (room.mode === 'CryptoHack') {
-                    player.crypto += Math.floor(Math.random() * 15) + 5;
+        // Boot player out if they are currently online in an active game
+        Object.keys(activeRooms).forEach(pin => {
+            Object.keys(activeRooms[pin].players).forEach(sId => {
+                if (activeRooms[pin].players[sId].name === targetUser) {
+                    io.to(sId).emit('forceDisconnectBoot', 'Your account has been terminated.');
                 }
-                
-                player.lastAnswerCorrect = true;
-                socket.emit('evaluationResult', { correct: true, score: player.score, gold: player.gold, crypto: player.crypto });
-            } else {
-                player.lastAnswerCorrect = false;
-                socket.emit('evaluationResult', { correct: false, score: player.score, gold: player.gold, crypto: player.crypto });
+            });
+        });
+        socket.emit('adminActionSuccess', `Account ${targetUser} successfully terminated.`);
+    });
+
+    // Close Game Instance (HridaanD System Command Override)
+    socket.on('adminActionKillGame', ({ adminUser, pin }) => {
+        if (adminUser !== 'HridaanD') return;
+        if (activeRooms[pin]) {
+            io.to(pin).emit('gameTerminated', 'This room was terminated by an administrator.');
+            delete activeRooms[pin];
+            pushTelemetryToAdmin();
+        }
+    });
+
+    // Host establishes a room instance using a custom quiz
+    socket.on('hostCreateRoom', async ({ hostName, quizId, gameMode }) => {
+        const quiz = await Quiz.findById(quizId);
+        if (!quiz) return socket.emit('errorNotification', 'Selected Quiz not found');
+
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        activeRooms[pin] = {
+            host: hostName,
+            hostSocketId: socket.id,
+            title: quiz.title,
+            questions: quiz.questions,
+            mode: gameMode,
+            state: 'LOBBY',
+            players: {},
+            currentQuestionIndex: 0
+        };
+
+        internalPin = pin;
+        socket.join(pin);
+        socket.emit('roomCreatedSuccess', activeRooms[pin]);
+        pushTelemetryToAdmin();
+    });
+
+    // Client join request
+    socket.on('playerJoinRoom', ({ pin, playerName }) => {
+        const room = activeRooms[pin];
+        if (!room) return socket.emit('errorNotification', 'Game Room not found.');
+        if (room.state !== 'LOBBY') return socket.emit('errorNotification', 'Game already in progress.');
+
+        room.players[socket.id] = { name: playerName, score: 0, resources: 100 };
+        internalPin = pin;
+        socket.join(pin);
+
+        io.to(pin).emit('lobbyPlayerUpdate', Object.values(room.players));
+        pushTelemetryToAdmin();
+    });
+
+    // Host initiates gameplay sequence
+    socket.on('hostStartGame', () => {
+        const room = activeRooms[internalPin];
+        if (room && room.hostSocketId === socket.id) {
+            room.state = 'PLAYING';
+            sendQuestionCycle(internalPin);
+            pushTelemetryToAdmin();
+        }
+    });
+
+    // Process submitted choices
+    socket.on('submitClientAnswer', ({ answerIndex }) => {
+        const room = activeRooms[internalPin];
+        if (!room || room.state !== 'PLAYING') return;
+
+        const pData = room.players[socket.id];
+        const qData = room.questions[room.currentQuestionIndex];
+
+        if (pData && qData) {
+            const isCorrect = answerIndex === qData.correctIndex;
+            if (isCorrect) {
+                pData.score += 100;
+                pData.resources += Math.floor(Math.random() * 60) + 15; // Dynamic resource gain
             }
-            io.to(room.hostId).emit('hostLeaderboardUpdate', Object.values(room.players));
+            socket.emit('answerFeedback', { isCorrect, currentResources: pData.resources });
+            io.to(room.hostSocketId).emit('hostScoreboardUpdate', Object.values(room.players));
         }
     });
 
     socket.on('disconnect', () => {
-        if (activeRooms[trackingRoom]) {
-            if (activeRooms[trackingRoom].hostId === socket.id) {
-                io.to(trackingRoom).emit('sessionTerminated', 'The Host left the session.');
-                clearInterval(activeRooms[trackingRoom].timerInterval);
-                delete activeRooms[trackingRoom];
-            } else if (activeRooms[trackingRoom].players[socket.id]) {
-                delete activeRooms[trackingRoom].players[socket.id];
-                io.to(trackingRoom).emit('lobbyUpdate', Object.values(activeRooms[trackingRoom].players));
+        if (activeRooms[internalPin]) {
+            const room = activeRooms[internalPin];
+            if (room.hostSocketId === socket.id) {
+                io.to(internalPin).emit('gameTerminated', 'The game host disconnected.');
+                delete activeRooms[internalPin];
+            } else if (room.players[socket.id]) {
+                delete room.players[socket.id];
+                io.to(internalPin).emit('lobbyPlayerUpdate', Object.values(room.players));
             }
-            io.to('admin-telemetry-stream').emit('telemetryPacket', compileGlobalTelemetry());
+            pushTelemetryToAdmin();
         }
     });
 });
 
-function runNextQuestionCycle(pin) {
+function sendQuestionCycle(pin) {
     const room = activeRooms[pin];
     if (!room) return;
 
-    const pack = questionPacks[room.pack];
-    if (room.questionIndex >= pack.length) {
-        room.status = 'LEADERBOARD';
-        const finalStandings = Object.values(room.players).sort((a, b) => b.score - a.score);
-        io.to(pin).emit('gameFinished', finalStandings);
+    if (room.currentQuestionIndex >= room.questions.length) {
+        room.state = 'FINISHED';
+        io.to(pin).emit('gameFinishedSummary', Object.values(room.players).sort((a, b) => b.score - a.score));
         return;
     }
 
-    const currentQuestionData = pack[room.questionIndex];
-    io.to(pin).emit('deliverQuestion', {
-        question: currentQuestionData.q,
-        answers: currentQuestionData.a,
-        index: room.questionIndex
+    const currentQ = room.questions[room.currentQuestionIndex];
+    io.to(pin).emit('nextGameQuestion', {
+        question: currentQ.question,
+        answers: currentQ.answers,
+        index: room.currentQuestionIndex
     });
-
-    room.timer = 15; // 15 seconds per question
-    clearInterval(room.timerInterval);
-    
-    room.timerInterval = setInterval(() => {
-        room.timer--;
-        io.to(pin).emit('timerTick', room.timer);
-        
-        if (room.timer <= 0) {
-            clearInterval(room.timerInterval);
-            room.questionIndex++;
-            runNextQuestionCycle(pin);
-        }
-    }, 1000);
 }
 
-function compileGlobalTelemetry() {
-    const telemetry = {};
-    Object.keys(activeRooms).forEach(pin => {
-        telemetry[pin] = {
-            pin: activeRooms[pin].pin,
-            hostName: activeRooms[pin].hostName,
-            mode: activeRooms[pin].mode,
-            status: activeRooms[pin].status,
-            clientCount: Object.keys(activeRooms[pin].players).length
-        };
-    });
-    return telemetry;
-}
+// DB Connection + Server Spin-Up
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/blooketRemake";
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('Database Cluster Online.'))
+    .catch((err) => console.error('Database connection failed:', err));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Blooket Remake Core Cluster Live on Port ${PORT}`));
+server.listen(PORT, () => console.log(`Server executing safely on port ${PORT}`));
