@@ -3,179 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blook Arena</title>
+    <title>Blooket Clone</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="game-mode-classic">
+<body>
 
-    <div id="auth-screen" class="container">
-        <h1>BLOOK REMAKE</h1>
-        <div style="background: var(--panel-bg); padding: 40px; border-radius: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.3)">
-            <input type="text" id="auth-username" placeholder="Username" style="width:90%; padding:15px; margin-bottom:15px; border-radius:8px; border:none; font-size:1.1rem;"><br>
-            <input type="password" id="auth-password" placeholder="Password" style="width:90%; padding:15px; margin-bottom:20px; border-radius:8px; border:none; font-size:1.1rem;"><br>
-            <button class="blook-btn blook-btn-blue" onclick="handleAuth('login')">Login</button>
-            <button class="blook-btn blook-btn-purple" onclick="handleAuth('signup')">Sign Up</button>
-        </div>
-    </div>
+    <div class="container">
+        <header>
+            <h1>BLOOK ARENA</h1>
+            <p style="color: #94a3b8; font-weight: bold; margin-bottom: 30px;">Live Multiplayer Platform</p>
+        </header>
 
-    <div id="hub-screen" class="container" style="display: none;">
-        <h1 id="welcome-text">PLAY BLOOK</h1>
-        
-        <div style="display:flex; gap: 30px; width:100%; justify-content:center; margin-top:40px;">
-            <div style="background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 40%;">
-                <h3>JOIN A GAME</h3>
-                <input type="text" id="join-pin" placeholder="Enter Game PIN" style="width:80%; padding:12px; margin-bottom:15px; border-radius:8px; border:none; font-size:1.2rem; text-align:center;"><br>
-                <button class="blook-btn blook-btn-green" onclick="joinGameRoom()">ENTER ARENA</button>
-            </div>
-
-            <div style="background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 40%;">
-                <h3>HOST A NEW ROOM</h3>
-                <select id="mode-select" style="width:85%; padding:12px; margin-bottom:15px; border-radius:8px; font-size:1.1rem;">
-                    <option value="classic">Classic Mode</option>
-                    <option value="gold">Gold Quest</option>
-                    <option value="brawl">Battle Brawl</option>
-                </select><br>
-                <button class="blook-btn blook-btn-orange" onclick="hostGameRoom()">CREATE ROOM</button>
-            </div>
+        <div id="screen-auth" class="game-card">
+            <h2>Sign In to Play</h2>
+            <input type="text" id="auth-user" class="blook-input" placeholder="Username"><br>
+            <input type="password" id="auth-pass" class="blook-input" placeholder="Password"><br>
+            <button class="blook-btn btn-blue" onclick="auth('login')">Login</button>
+            <button class="blook-btn btn-purple" onclick="auth('signup')">Create Account</button>
         </div>
 
-        <div id="hridaand-admin-panel" class="container" style="display:none; margin-top: 50px;">
-            <div class="admin-wrapper">
-                <h2 style="color: var(--accent-warning); margin-top:0;">🛑 EMERGENCY OVERRIDE PLATFORM</h2>
-                <p>System Token Status: <span style="color: var(--accent-success); font-weight:900;">AUTHORIZED AS HRIDAAND</span></p>
-                <h3>All Live Global Game Sessions:</h3>
-                <div id="admin-telemetry-hook">
+        <div id="screen-hub" class="game-card" style="display: none;">
+            <h2 id="hub-welcome">Welcome</h2>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 20px;">
+                <div style="background: #1e293b; border: 2px solid #475569; padding: 20px; border-radius: 16px; width: 45%;">
+                    <h3>Join Game</h3>
+                    <input type="text" id="game-pin-input" class="blook-input" placeholder="6-Digit PIN"><br>
+                    <button class="blook-btn btn-green" onclick="joinGame()">Enter Game</button>
+                </div>
+                
+                <div style="background: #1e293b; border: 2px solid #475569; padding: 20px; border-radius: 16px; width: 45%;">
+                    <h3>Host Game</h3>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Select Question Set:</label>
+                    <select id="host-quiz-select" class="blook-select">
+                        <option value="default">Default Math & Science Pack</option>
+                    </select>
+                    <button class="blook-btn btn-orange" onclick="hostGame()">Launch Lobby</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 2px solid #334155; padding-top: 20px;">
+                <h3>🛠️ Quiz Set Builder</h3>
+                <div style="background: #0f172a; padding: 20px; border-radius: 16px; text-align: left;">
+                    <input type="text" id="creator-quiz-title" class="blook-input" placeholder="Quiz Title" style="width: 93%;"><br>
+                    
+                    <div id="question-builder-box" style="border-left: 4px solid var(--accent-purple); padding-left: 15px; margin-bottom: 15px;">
+                        <p style="font-weight: bold; color: var(--accent-purple); margin: 5px 0;">Add Question:</p>
+                        <input type="text" id="q-text" class="blook-input" placeholder="The Question Prompt" style="width: 93%;"><br>
+                        <input type="text" id="q-a0" class="blook-input" placeholder="Answer 1 (Correct Choice)" style="width: 43%; border-color: var(--accent-green);">
+                        <input type="text" id="q-a1" class="blook-input" placeholder="Answer 2" style="width: 43%;">
+                        <input type="text" id="q-a2" class="blook-input" placeholder="Answer 3" style="width: 43%;">
+                        <input type="text" id="q-a3" class="blook-input" placeholder="Answer 4" style="width: 43%;">
                     </div>
+                    <button class="blook-btn btn-purple" onclick="saveCreatedQuiz()">Save Question Set</button>
+                    <span id="creator-status" style="margin-left: 10px; font-weight: bold; color: var(--accent-green);"></span>
+                </div>
+            </div>
+
+            <div id="admin-portal" class="admin-panel" style="display: none;">
+                <h3 style="color: var(--accent-orange); margin: 0 0 10px 0;">🛑 HRIDAAND ADMIN PRIVILEGE OVERVIEW</h3>
+                <p>Live Cluster Engine State: Viewing all operational nodes across server.</p>
+                <div id="admin-live-telemetry">No active instances found.</div>
             </div>
         </div>
-    </div>
 
-    <div id="game-screen" class="container" style="display: none;">
-        <h1 id="display-room-title">Lobby</h1>
-        <h2 id="display-room-pin" style="font-size: 3rem; color: var(--accent-warning);">PIN: ------</h2>
-        <div id="lobby-players-box" style="background: rgba(0,0,0,0.2); padding: 20px; width:80%; min-height: 200px; border-radius: 16px; margin: 20px 0;"></div>
-        <button id="start-game-btn" class="blook-btn blook-btn-green" style="display:none;" onclick="triggerStart()">START GAME</button>
-        
-        <div id="active-playboard" style="display:none; width: 100%;">
-            <h2 id="current-question-text" style="font-size: 2.2rem; margin-bottom:40px;">Waiting for question...</h2>
-            <div class="answer-grid">
-                <div class="answer-card" onclick="submitChoice(0)" id="ans-0">Choice 1</div>
-                <div class="answer-card" onclick="submitChoice(1)" id="ans-1">Choice 2</div>
-                <div class="answer-card" onclick="submitChoice(2)" id="ans-2">Choice 3</div>
-                <div class="answer-card" onclick="submitChoice(3)" id="ans-3">Choice 4</div>
+        <div id="screen-game" class="game-card" style="display: none;">
+            <h2 id="room-header-status">Waiting for Host...</h2>
+            <h1 id="room-pin-display" style="font-size: 4rem; color: var(--accent-orange); margin: 10px 0;">------</h1>
+            
+            <div id="lobby-players" style="background: #0f172a; border-radius: 12px; padding: 15px; min-height: 80px; margin-bottom: 20px;"></div>
+            <button id="host-start-btn" class="blook-btn btn-green" style="display: none;" onclick="startGameLoop()">Start Match</button>
+
+            <div id="playboard" style="display: none; margin-top: 20px;">
+                <div style="background: #0f172a; padding: 25px; border-radius: 16px; margin-bottom: 20px;">
+                    <h2 id="arena-question-text" style="margin: 0; font-size: 1.8rem;">Loading Question...</h2>
+                </div>
+                <div class="answer-grid">
+                    <div class="answer-card ans-red" onclick="answerClick(0)" id="btn-ans-0">Choice 1</div>
+                    <div class="answer-card ans-blue" onclick="answerClick(1)" id="btn-ans-1">Choice 2</div>
+                    <div class="answer-card ans-green" onclick="answerClick(2)" id="btn-ans-2">Choice 3</div>
+                    <div class="answer-card ans-orange" onclick="answerClick(3)" id="btn-ans-3">Choice 4</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const socket = io();
-        let globalUsername = null;
-        let isHostUser = false;
+        let user = null;
+        let isHost = false;
+        let customQuizzes = {};
 
-        function handleAuth(type) {
-            const username = document.getElementById('auth-username').value;
-            const password = document.getElementById('auth-password').value;
+        function auth(mode) {
+            const username = document.getElementById('auth-user').value;
+            const password = document.getElementById('auth-pass').value;
+            if(!username || !password) return alert("Fill in authentication boxes.");
 
-            fetch(`/api/${type}`, {
+            fetch(`/api/${mode}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username, password })
             })
             .then(res => res.json())
             .then(data => {
-                if (data.error) return alert(data.error);
+                if(data.error) return alert(data.error);
+                user = data.username;
                 
-                globalUsername = data.username;
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('hub-screen').style.display = 'flex';
-                document.getElementById('welcome-text').innerText = `WELCOME, ${globalUsername.toUpperCase()}`;
+                document.getElementById('screen-auth').style.display = 'none';
+                document.getElementById('screen-hub').style.display = 'block';
+                document.getElementById('hub-welcome').innerText = `WELCOME BACK, ${user.toUpperCase()}!`;
 
-                // Validate admin flag for HridaanD
-                if (globalUsername === 'HridaanD') {
-                    document.getElementById('hridaand-admin-panel').style.display = 'block';
+                if(user === 'HridaanD') {
+                    document.getElementById('admin-portal').style.display = 'block';
                     socket.emit('registerAdminFeed', { username: 'HridaanD' });
                 }
             });
         }
 
-        function hostGameRoom() {
-            const mode = document.getElementById('mode-select').value;
-            isHostUser = true;
-            socket.emit('hostCreateRoom', { hostName: globalUsername, gameMode: mode });
+        function saveCreatedQuiz() {
+            const title = document.getElementById('creator-quiz-title').value;
+            const q = document.getElementById('q-text').value;
+            const a0 = document.getElementById('q-a0').value;
+            const a1 = document.getElementById('q-a1').value;
+            const a2 = document.getElementById('q-a2').value;
+            const a3 = document.getElementById('q-a3').value;
+
+            if(!title || !q || !a0) return alert("Ensure title, question, and Answer 1 are filled.");
+
+            const quizId = 'custom_' + Date.now();
+            customQuizzes[quizId] = {
+                title: title,
+                questions: [{ question: q, answers: [a0, a1, a2, a3], correct: 0 }]
+            };
+
+            const select = document.getElementById('host-quiz-select');
+            const opt = document.createElement('option');
+            opt.value = quizId;
+            opt.innerText = title;
+            select.appendChild(opt);
+
+            document.getElementById('creator-status').innerText = "Quiz Saved Successfully!";
+            setTimeout(() => document.getElementById('creator-status').innerText = "", 3000);
         }
 
-        function joinGameRoom() {
-            const pin = document.getElementById('join-pin').value;
-            if(!pin) return alert('Enter a PIN');
-            socket.emit('playerJoinRoom', { pin, playerName: globalUsername });
+        function hostGame() {
+            isHost = true;
+            const selectedQuiz = document.getElementById('host-quiz-select').value;
+            let pack = null;
+            if(selectedQuiz !== 'default') pack = customQuizzes[selectedQuiz].questions;
+
+            socket.emit('hostCreateRoom', { hostName: user, customPack: pack });
         }
 
-        function triggerStart() {
+        function joinGame() {
+            const pin = document.getElementById('game-pin-input').value;
+            if(!pin) return alert("Enter code.");
+            socket.emit('playerJoinRoom', { pin, playerName: user });
+        }
+
+        function startGameLoop() {
             socket.emit('startGame');
         }
 
-        function submitChoice(index) {
-            socket.emit('submitAnswer', { answerIndex: index });
+        function answerClick(idx) {
+            socket.emit('submitAnswer', { answerIndex: idx });
         }
 
-        // Socket Receivers
+        // Socket Listeners
         socket.on('roomCreated', (room) => {
-            document.getElementById('hub-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'flex';
-            document.getElementById('display-room-title').innerText = `MODE: ${room.gameMode.toUpperCase()}`;
-            document.getElementById('display-room-pin').innerText = `PIN: ${room.pin}`;
-            if (isHostUser) document.getElementById('start-game-btn').style.display = 'inline-block';
+            document.getElementById('screen-hub').style.display = 'none';
+            document.getElementById('screen-game').style.display = 'block';
+            document.getElementById('room-header-status').innerText = "LOBBY PIN";
+            document.getElementById('room-pin-display').innerText = room.pin;
+            if(isHost) document.getElementById('host-start-btn').style.display = 'inline-block';
         });
 
         socket.on('playerListUpdate', (players) => {
-            document.getElementById('hub-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'flex';
-            const lobby = document.getElementById('lobby-players-box');
-            lobby.innerHTML = players.map(p => `<span style="padding:10px 20px; background:var(--panel-bg); margin:5px; border-radius:10px; display:inline-block; font-weight:bold;">✨ ${p.name}</span>`).join('');
+            document.getElementById('screen-hub').style.display = 'none';
+            document.getElementById('screen-game').style.display = 'block';
+            document.getElementById('lobby-players').innerHTML = players.map(p => `<span style="background:#1e293b; padding:8px 15px; margin:5px; border-radius:8px; display:inline-block; font-weight:bold; border:1px solid #475569;">👾 ${p.name}</span>`).join('');
         });
 
         socket.on('nextQuestion', (qData) => {
-            document.getElementById('lobby-players-box').style.display = 'none';
-            document.getElementById('start-game-btn').style.display = 'none';
-            document.getElementById('active-playboard').style.display = 'block';
-            
-            document.getElementById('current-question-text').innerText = qData.question;
+            document.getElementById('lobby-players').style.display = 'none';
+            document.getElementById('host-start-btn').style.display = 'none';
+            document.getElementById('room-pin-display').style.display = 'none';
+            document.getElementById('room-header-status').innerText = `QUESTION ${qData.index + 1}`;
+            document.getElementById('playboard').style.display = 'block';
+
+            document.getElementById('arena-question-text').innerText = qData.question;
             for(let i=0; i<4; i++) {
-                document.getElementById(`ans-${i}`).innerText = qData.answers[i] || '';
+                const card = document.getElementById(`btn-ans-${i}`);
+                if(qData.answers[i]) {
+                    card.innerText = qData.answers[i];
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
             }
         });
 
         socket.on('answerResult', (data) => {
-            alert(data.correct ? `Correct! +100 Pts. Current Gold: ${data.currentGold}` : "Incorrect answer!");
+            alert(data.correct ? "🎯 CORRECT! Fantastic job!" : "❌ INCORRECT! Better luck on the next one.");
         });
 
-        // HridaanD Admin Socket Stream Listener
-        socket.on('adminTelemetryUpdate', (globalRooms) => {
-            if (globalUsername !== 'HridaanD') return;
-            const outputHook = document.getElementById('admin-telemetry-hook');
-            outputHook.innerHTML = '';
+        socket.on('gameOver', (leaderboard) => {
+            document.getElementById('playboard').style.display = 'none';
+            document.getElementById('room-header-status').innerText = "🏆 FINAL STANDINGS";
+            const board = document.getElementById('lobby-players');
+            board.style.display = 'block';
+            board.innerHTML = leaderboard.map((p, i) => `<div style="padding:10px; border-bottom:1px solid #334155;"><b>#${i+1} ${p.name}</b> - Score: ${p.score}</div>`).join('');
+        });
 
-            const keys = Object.keys(globalRooms);
+        socket.on('adminTelemetryUpdate', (rooms) => {
+            if(user !== 'HridaanD') return;
+            const hook = document.getElementById('admin-live-telemetry');
+            const keys = Object.keys(rooms);
             if(keys.length === 0) {
-                outputHook.innerHTML = '<p style="color:gray; font-style:italic;">No games are currently active on the cluster.</p>';
+                hook.innerHTML = "No game servers currently executing operations.";
                 return;
             }
-
-            keys.forEach(pin => {
-                const data = globalRooms[pin];
-                const badge = document.createElement('div');
-                badge.className = 'live-game-badge';
-                badge.innerHTML = `
-                    <div>
-                        <strong style="color:var(--accent-warning)">[PIN: ${data.pin}]</strong> - Host: <b>${data.hostName}</b> | Mode: <i>${data.gameMode}</i>
-                    </div>
-                    <div>
-                        State: <span style="color:var(--accent-success)">${data.state}</span> | Active Clients: <b>${data.activeCount}</b>
-                    </div>
-                `;
-                outputHook.appendChild(badge);
-            });
+            hook.innerHTML = keys.map(pin => `
+                <div style="background:#0f172a; padding:10px; margin:5px 0; border-radius:8px; border-left:4px solid var(--accent-green);">
+                    <b>PIN: ${rooms[pin].pin}</b> | Host: ${rooms[pin].hostName} | Players Connected: ${rooms[pin].activeCount} | State: ${rooms[pin].state}
+                </div>
+            `).join('');
         });
 
         socket.on('joinError', (err) => alert(err));
